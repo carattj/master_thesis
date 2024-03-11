@@ -1,5 +1,9 @@
-# crawler.py
+# Crawler
 F-Droid does not directly provide the source code for the applications it hosts. Instead, users must navigate to the webpage of a specific application on F-Droid and click on the 'source code' link to access it. While F-Droid does offer a per-app API to access its active packages, I discovered a more convenient method to obtain the source code for each F-Droid Android application. I utilized [F-Droid Insights](https://dbeley.github.io/fdroid-insights/), an actively maintained GitHub project designed to facilitate the exploration of F-Droid apps using data from external sources. This platform displays various information for each active Android project, including the public repository for each open-source project. These details can be conveniently downloaded as a processable CSV file, which served as the primary source for creating the dataset.
+
+## Structure
+- [crawler.py](./crawler.py) = script to crawl APKs
+- [apks.txt](./apks.txt) = list of successfully obtained APKs
 
 ## Requirements
 - [Android SDK command line tools](https://developer.android.com/studio)
