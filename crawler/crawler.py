@@ -5,6 +5,7 @@ import shutil
 import argparse
 import hashlib
 import subprocess
+import time
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -50,12 +51,10 @@ def create_file(file_path):
     except Exception as e:
         print(f"An error occurred while creating the file: {e}")
 
-def find_row_by_repository(csv_file, start_repository):
-    with open(csv_file, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for i, row in enumerate(reader):
-            if row['Repository'] == start_repository:
-                return i
+def find_row_by_repository(dataframe, start_repository):
+    for i, row in dataframe.iterrows():
+        if row['Repository'] == start_repository:
+            return i
     return None
 
 def check_repository_structure(url):
@@ -185,9 +184,13 @@ def write_to_file(file_path, content):
     with open(file_path, 'a') as file:
         file.write(f'{content}\n')
 
-def process_projects(df, output_csv, output_dir, tmp_dir, start_index):
+def process_projects(df, output_csv, output_dir, tmp_dir, start_repository):
 
     repositories_list = df.Repository.tolist()
+
+    start_index = 0
+    if start_repository:
+        start_index = repositories_list.index(start_repository)
 
     for i, current_repository in enumerate(repositories_list):
 
@@ -202,20 +205,25 @@ def process_projects(df, output_csv, output_dir, tmp_dir, start_index):
         if check_repository_structure(current_repository):
             cloned_repository_name = clone_repository(tmp_dir, current_repository)
             if not cloned_repository_name:
-                write_to_file(output_csv, f'{apk_hash},{current_repository},{False},"",""')
+                write_to_file(output_csv, f'{apk_hash},{current_repository},,,{False},')
                 continue
  
             language, is_minified = disable_obfuscation(tmp_dir, cloned_repository_name)
-
+            
+            start_time = time.time()  # Record start time
             if not compile(tmp_dir, cloned_repository_name):
-                write_to_file(output_csv, f'{apk_hash},{current_repository},{False},{language},{is_minified}')
+                end_time = time.time()
+                compilation_time = end_time - start_time
+                write_to_file(output_csv, f'{apk_hash},{current_repository},{language},{is_minified},{False},{compilation_time}')
                 shutil.rmtree(os.path.join(os.path.join(tmp_dir, cloned_repository_name)))
                 continue 
 
+            end_time = time.time()
+            compilation_time = end_time - start_time
             is_saved = save_apk(tmp_dir, cloned_repository_name, output_dir, apk_hash)
-            write_to_file(output_csv, f'{apk_hash},{current_repository},{is_saved},{language},{is_minified}')
+            write_to_file(output_csv, f'{apk_hash},{current_repository},{language},{is_minified},{is_saved},{compilation_time}')
         else:
-            write_to_file(output_csv, f'{apk_hash},{current_repository},{False},"",""')
+            write_to_file(output_csv, f'{apk_hash},{current_repository},,,{False},')
 
 
 if __name__ == '__main__':
@@ -226,17 +234,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     input_csv = args.input_csv
-    start = args.starting_apk
+    start_repository = args.starting_apk
     output_csv = 'apks.csv'
     output_statistics = 'statistics.csv'
     output_dir = 'apks'
     tmp_dir = 'tmp'
-    start_index = 0
 
     df = pd.read_csv(input_csv)
     df, corrupted, duplicated = data_cleaning(df)
 
-    if not start:
+    if not start_repository:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
@@ -245,11 +252,11 @@ if __name__ == '__main__':
         os.makedirs(tmp_dir)
 
         create_file(output_csv)
-        write_to_file(output_csv, 'hash,repository,language,is_minified,compiled')
+        write_to_file(output_csv, 'hash,repository,language,is_minified,compiled,compilation_time')
         
         create_file(output_statistics)
         write_to_file(output_statistics, f'dataset,corrupted_samples,duplicated_samples\n{input_csv},{corrupted},{duplicated}')
-    else:
-        start_index = find_row_by_repository(input_csv, start)
+    # else:
+        # start_index = find_row_by_repository(df, start)
 
-    process_projects(df, output_csv, output_dir, tmp_dir, start_index)
+    process_projects(df, output_csv, output_dir, tmp_dir, start_repository)
