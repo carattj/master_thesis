@@ -1,1 +1,4 @@
-# master_thesis
+### Student: Jacopo Caratti
+This repository contains the main code used for the research work XXX, carried out for my Master Thesis.
+# Master Thesis
+This work presents an analysis of identifier renaming, a common obfuscation technique used in both benign and malicious Android APKs. Leveraging real-world and synthetic datasets, we delve into the usage of this technique. Moreover, to combat identifier renaming and enhance code de-obfuscation, we explore the application of Graph Neural Networks and alternative neural architectures. Our investigation aims to study and possibly advance the current state-of-the-art methods for de-obfuscating Android applications.
