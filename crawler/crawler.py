@@ -155,7 +155,7 @@ def save_apk(tmp_dir, cloned_repo, output_dir, apk_name):
     print(f"####### 5. Saving APK")
     release_dir = os.path.join(tmp_dir, cloned_repo, 'app', 'build', 'outputs', 'apk')
     if os.path.exists(release_dir) and find_apk_files(release_dir)[0]:
-        shutil.copy(find_apk_files(release_dir)[0], os.path.join(output_dir, apk_name))        
+        shutil.copy(find_apk_files(release_dir)[0], os.path.join(output_dir, apk_name, '.apk'))        
         shutil.rmtree(os.path.join(tmp_dir, cloned_repo))
         print("### Success")
         return True
