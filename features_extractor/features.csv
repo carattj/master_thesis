@@ -1,4 +1,4 @@
-hash,size,permissions,version_code,version_name,target_sdk_version,min_sdk_version
+hash,size,version_code,version_name,target_sdk_version,min_sdk_version
 00b097cd3f1fa1bfe06cb4018454709e5d42033cde40c3780e582d8ad52ed281.apk,6316687,22,1.3.0,33,21
 01d620ea7567b1693c8e7d6ff93ce63da1f8a83df3cd941a4ff53e4cc303328d.apk,14082352,70,0.7.0,33,21
 01e7ae1305ecf4819fdf5e29319f17e0ece1a30c1d699b5d78e7d4239e7f87d0.apk,6130122,43,2.2.4,33,21

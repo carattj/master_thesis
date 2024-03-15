@@ -28,7 +28,7 @@ def extract_apk_info(input_dir, output_file):
             min_sdk_version = a.get_min_sdk_version()
 
             # Write the extracted information to the CSV file
-            write_to_file(output_file, f'{apk_file},{size},{version_code},{version_name},{target_sdk_version},{min_sdk_version}')
+            write_to_file(output_file, f'{apk_file},{size},{permissions},{version_code},{version_name},{target_sdk_version},{min_sdk_version}')
 
 def write_to_file(file_path, content):
     with open(file_path, 'a') as file:
