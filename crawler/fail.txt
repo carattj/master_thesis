@@ -1,0 +1,5 @@
+https://github.com/ShiftHackZ/Stable-Diffusion-Android
+https://github.com/0xbad1d3a5/Kaku
+https://github.com/Crazy-Marvin/ToDont
+https://github.com/Viatorus/neo2-external-keyboard/
+https://github.com/niteshpatel/ministocks
