@@ -17,7 +17,7 @@ def extract_apk_info(input_dir, output_file):
             try:
                 a = a, dx, d = AnalyzeAPK(apk_path)
                 permissions = a.get_permissions()
-                permissions = ','.join(permissions)
+                permissions = ';'.join(permissions)
             except Exception as e:
                 permissions = 'Error extracting permissions'
 
