@@ -23,8 +23,8 @@ def run_command(apk_files, mode, input_dir, output_dir, stats_dir):
             "docker", "run", "--rm", "-it",
             "-u", "1001:1001",
             "-v", f"{os.getcwd()}:/workdir",
-            "obfuscapk", "-o",
-            f"{mode}",
+            "obfuscapk", "-i",
+            "-o", f"{mode}",
             "-o", "Rebuild", "-o", "NewAlignment", "-o", "NewSignature",
             os.path.join(input_dir, apk_file),
             "-w",
@@ -35,12 +35,12 @@ def run_command(apk_files, mode, input_dir, output_dir, stats_dir):
             subprocess.run(command, check=True)
             end_time = time.time()
             duration = end_time - start_time
-            write_to_file(os.path.join(stats_dir, f'{mode}.csv'), f'{apk_file}, {True}, {duration:.2f}')
+            write_to_file(os.path.join(stats_dir, f'{mode}.csv'), f'{apk_file},{True},{duration:.2f}')
             print(f"### Successful (Time: {duration:.2f} seconds)")
         except subprocess.CalledProcessError as e:
             end_time = time.time()
             duration = end_time - start_time
-            write_to_file(os.path.join(stats_dir, f'{mode}.csv'), f'{apk_file}, {False}, {duration:.2f}')
+            write_to_file(os.path.join(stats_dir, f'{mode}.csv'), f'{apk_file},{False},{duration:.2f}')
             print(f"### Fail")
             continue
 
