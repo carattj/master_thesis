@@ -233,22 +233,29 @@ def compare_methods(generator_a, generator_b):
             b_diff.append(b[1])
     return tuple(zip(a_diff, b_diff))
 
-def get_rawcode_and_codetokens(base_function, obfuscated_strings):
+def get_rawcode_and_codetokens(index, seen_variables, base_function, obfuscated_strings):
     raw_code = base_function
     code_tokens = base_function
-    for index, (original_string, obfuscated_string) in enumerate(obfuscated_strings):
+    for original_string, obfuscated_string in obfuscated_strings:
+
+        if original_string not in seen_variables.keys():
+            seen_variables[original_string] = index
+            index += 1
+            
         # Construct regex pattern to match only whole words
         pattern = r'\b{}\b'.format(re.escape(original_string))
         # Replace only exact matches
-        raw_code = re.sub(pattern, f'@@VAR_{index}@@{obfuscated_string}@@{original_string}', raw_code)
+        raw_code = re.sub(pattern, f'@@VAR_{seen_variables[original_string]}@@{obfuscated_string}@@{original_string}', raw_code)
         code_tokens = re.sub(pattern, f'@@{obfuscated_string}@@', code_tokens)
-    return raw_code, [str(token[1]) for token in list(CTLexer(code_tokens).get_tokens())]
+    return index, seen_variables, raw_code, [str(token[1]) for token in list(CTLexer(code_tokens).get_tokens())]
 
 def get_raw_codes_and_code_tokens_from_files(filename_a, filename_b):
     methods_a = get_methods_from_file(filename_a)
     methods_b = get_methods_from_file(filename_b)
 
     raw_codes = {}
+    seen_variables = {}
+    index = 0
     if methods_a.keys() == methods_b.keys():
         for method in methods_a.keys():
             tokens_a = Lexer(methods_a[method]['code']).get_tokens()
@@ -256,7 +263,7 @@ def get_raw_codes_and_code_tokens_from_files(filename_a, filename_b):
             obfuscated_strings_tuples_list = compare_methods(tokens_a, tokens_b)
             if obfuscated_strings_tuples_list is None or len(obfuscated_strings_tuples_list) == 0: continue
             # if obfuscated_strings_tuples_list is None: continue
-            raw_code, code_tokens = get_rawcode_and_codetokens(methods_a[method]['code'], obfuscated_strings_tuples_list)
+            index, seen_variables, raw_code, code_tokens = get_rawcode_and_codetokens(index, seen_variables, methods_a[method]['code'], obfuscated_strings_tuples_list)
             raw_codes[method] = {'raw_code': raw_code, 'code_tokens': code_tokens}
     
     return raw_codes
@@ -360,7 +367,7 @@ def create_training_data_for_apk(apk1, apk2, output_dir):
             data = {}
             data['function'] = fn
             data['raw_code'] = tokenized_code[fn]['raw_code']
-            data['ast'] = {}
+            data['ast'] = {"node_id":0,"node_type":"block","address":"0040142E","name":"net_written","children":[{"node_id":1,"node_type":"if","address":"0040142E","children":[{"node_id":2,"node_type":"block","address":"0040143A","children":[{"node_id":3,"node_type":"expr","address":"0040143A","children":[{"node_id":4,"node_type":"asg","address":"0040143A","x":{"node_id":5,"node_type":"var","address":"FFFFFFFFFFFFFFFF","parent_address":"0040143A","var_id":"VAR_93","type_tokens":["int64"],"ref_width":8,"type":"__int64","old_name":"result","is_arg":False,"new_name":"result"},"y":{"node_id":6,"node_type":"call","address":"0040143A","x":{"node_id":7,"node_type":"obj","address":"FFFFFFFFFFFFFFFF","parent_address":"0040143A","name":"sel_rfd_unfreeze","type_tokens":["int64","fastcall","*","int64"],"ref_width":-1,"type":"__int64 (__fastcall *)(__int64)"},"type_tokens":["int64"],"type":"__int64","children":[{"node_id":8,"node_type":"obj","address":"00401437","ref_width":8,"type_tokens":["int64"],"name":"ptyr","type":"__int64"}]},"type_tokens":["int64"],"type":"__int64"}]}]},{"node_id":9,"node_type":"ule","address":"0040142E","x":{"node_id":10,"node_type":"var","address":"FFFFFFFFFFFFFFFF","parent_address":"0040142E","var_id":"VAR_94","type_tokens":["unsigned","int64"],"ref_width":8,"type":"unsigned __int64","old_name":"a2","is_arg":True,"new_name":"bufsize"},"y":{"node_id":11,"node_type":"num","address":"00401426","name":"NUMBER","type_tokens":["signed","int"],"type":"signed int"},"type_tokens":["bool"],"type":"bool"}]},{"node_id":12,"node_type":"return","address":"0040143F","children":[{"node_id":13,"node_type":"var","address":"FFFFFFFFFFFFFFFF","parent_address":"0040143F","var_id":"VAR_93","type_tokens":["int64"],"ref_width":8,"type":"__int64","old_name":"result","is_arg":False,"new_name":"result"}]}]}
             data['code_tokens'] = tokenized_code[fn]['code_tokens']
             
             with open(out_file_path, 'a') as f:
