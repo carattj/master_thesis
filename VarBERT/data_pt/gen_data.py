@@ -247,7 +247,7 @@ def normalize_var(var):
     var = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', var)
     return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', var).lower()
 
-def parse_methods_in_file(filename_a, filename_b):
+def parse_methods_in_file_pt(filename_a, filename_b):
     methods_a = get_methods_from_file(filename_a)
     methods_b = get_methods_from_file(filename_b)
 
@@ -280,6 +280,48 @@ def parse_methods_in_file(filename_a, filename_b):
 
         return methods
 
+def parse_methods_in_file_ft(filename_a, filename_b):
+    methods_a = get_methods_from_file(filename_a)
+    methods_b = get_methods_from_file(filename_b)
+
+    if methods_a.keys() == methods_b.keys():
+        methods = []
+        for method in methods_a.keys():
+            tokens_a = Lexer(methods_a[method]['code']).get_tokens()
+            tokens_b = Lexer(methods_b[method]['code']).get_tokens()
+
+            obfuscated_strings_tuples_list = compare_methods(tokens_a, tokens_b)
+            if obfuscated_strings_tuples_list is None or len(obfuscated_strings_tuples_list) == 0: continue
+
+            orig_func = methods_a[method]['code'].strip()
+            orig_func = re.sub(r' {4}', '\t', orig_func)
+
+            id = uuid.uuid1().int
+            md5 = hashlib.md5(orig_func.encode()).hexdigest()
+            func_name = method
+            func_name_dwarf = method
+            dwarf_mangled_func_name = method
+            func, norm_func = get_func(orig_func, obfuscated_strings_tuples_list)
+            type_stripped_vars = {vars[0]: 'dwarf' for vars in obfuscated_strings_tuples_list}
+            vars_map = [[vars[0], normalize_var(vars[0])] for vars in obfuscated_strings_tuples_list]
+
+            method_obj = {
+                'id': id,
+                'md5': md5,
+                'hash': md5,
+                'func_name': func_name,
+                'func_name_dwarf': func_name_dwarf,
+                'dwarf_mangled_func_name': dwarf_mangled_func_name,
+                'language': 'Java',
+                'func': func,
+                'norm_func': norm_func,
+                'type_stripped_vars': type_stripped_vars,
+                'vars_map': vars_map
+            }
+
+            methods.append(method_obj)
+
+        return methods
 
 ### process an APK
 import os
@@ -318,10 +360,6 @@ def get_shared_and_different_files(directory1, directory2, shared_files):
             shared_and_different_files.append((file1, file2))
     return shared_and_different_files
 
-# def filter_files(shared_files): #???
-#     filtered_paths = [path for path in shared_files if '/android/' not in path and '/androidx/' not in path and '/kotlin/' not in path and '/kotlinx/' not in path]
-#     return filtered_paths
-
 def get_training_files_paths(apk1, apk2):
     tmp_dir = './tmp'
     if os.path.exists(tmp_dir):
@@ -346,23 +384,7 @@ import json
 import hashlib
 import shutil
 
-# def create_out_file(apk, file, tmp_dir):
-#     file_general_path = '/'.join(file.split('/')[3:])
-#     # filename = hashlib.sha256(file_general_path.encode()).hexdigest()
-#     # filename = file_general_path.replace('/','-')
-#     filename = hashlib.md5((file_general_path).encode()).hexdigest()
-#     # with open('files.txt', 'a') as f:
-#     #     f.write(f'{filename}\n')
-#     out_file_name = f'{filename}.jsonl'
-#     out_file_path = os.path.join(tmp_dir, out_file_name)
-#     print(out_file_path)
-#     if os.path.isfile(out_file_path):
-#         print(f"Error: {out_file_path} already exists")
-#     with open(out_file_path, 'w') as f:
-#         f.write('')
-#     return out_file_path
-
-def create_training_data_for_apk(apk1, apk2, md5_list_path, out_jsonl_path):
+def create_training_data_for_apk(apk1, apk2, md5_list_path, out_jsonl_path, mode):
 
     with open(md5_list_path, 'r') as f:
         md5_list = f.read().splitlines()
@@ -371,7 +393,12 @@ def create_training_data_for_apk(apk1, apk2, md5_list_path, out_jsonl_path):
 
     for index, files in enumerate(training_files):
         print(f'# {index} - Processing {files[0]}')
-        methods_from_file = parse_methods_in_file(files[0], files[1])
+
+        methods_from_file = None
+        if mode == 'ft':
+            methods_from_file = parse_methods_in_file_ft(files[0], files[1])
+        elif mode == 'pt':
+            methods_from_file = parse_methods_in_file_pt(files[0], files[1])
         if methods_from_file is None or len(methods_from_file) == 0: continue
 
         for method in methods_from_file:
@@ -392,11 +419,13 @@ def main():
     parser = argparse.ArgumentParser(description='Process APK files.')
     parser.add_argument('-p1', '--path1', type=str, help='Path to directory containing APK files')
     parser.add_argument('-p2', '--path2', type=str, help='Path to directory containing APK files')
+    parser.add_argument('-m', '--mode', type=str, help='Generation data mode [pt = pre-train or ft = fine-tune]')
 
     args = parser.parse_args()
 
     path1 = args.path1
     path2 = args.path2
+    mode = args.mode
 
     with open('log.txt', 'w') as f:
         f.write('')
@@ -418,7 +447,7 @@ def main():
             f.write(f'{apk}\n')
         apk1 = os.path.join(path1, apk)
         apk2 = os.path.join(path2, apk)
-        create_training_data_for_apk(apk1, apk2, 'md5.txt', 'out.jsonl')
+        create_training_data_for_apk(apk1, apk2, 'md5.txt', 'out.jsonl', mode)
 
 if __name__ == '__main__':
     main()
